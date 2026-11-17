@@ -7,8 +7,10 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
-    <!-- Librería para generar la imagen HD -->
-    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    
+    <!-- NUEVA LIBRERÍA: html-to-image (Mucho más estable con Grid y Modo Oscuro) -->
+    <script src="https://unpkg.com/html-to-image@1.11.11/dist/html-to-image.js"></script>
+    
     <style>
         :root {
             --bg-color: #0a0a0c;
@@ -31,7 +33,7 @@
             color: var(--text-main);
             font-family: 'Inter', sans-serif;
             line-height: 1.5;
-            padding: 3rem 1rem 6rem 1rem; /* Espacio extra abajo para el botón */
+            padding: 3rem 1rem 6rem 1rem;
             -webkit-font-smoothing: antialiased;
             display: flex;
             flex-direction: column;
@@ -42,7 +44,6 @@
         .container {
             width: 100%;
             max-width: 1100px;
-            /* Añadimos un fondo y padding al contenedor para que la captura HD se vea perfecta */
             background-color: var(--bg-color);
             padding: 2rem;
             border-radius: 24px;
@@ -218,6 +219,14 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
+        /* CLASE ESPECIAL PARA LA CAPTURA: Desactiva animaciones para que todo sea visible */
+        .exporting * {
+            animation: none !important;
+            transition: none !important;
+            opacity: 1 !important;
+            transform: none !important;
+        }
+
         @media (max-width: 600px) {
             body { padding: 1.5rem 1rem 6rem 1rem; }
             .container { padding: 1rem; }
@@ -230,7 +239,6 @@
 </head>
 <body>
 
-    <!-- Envolvemos todo en un contenedor para la captura -->
     <div class="container" id="capture-area">
         <header>
             <div class="school-name">Alexander Von Humboldt</div>
@@ -239,7 +247,6 @@
         </header>
 
         <main class="schedule-grid">
-            <!-- MARTES 17 -->
             <div class="day-card">
                 <h2 class="day-title">Martes <span class="day-date">17/11</span></h2>
                 <ul class="subject-list">
@@ -248,7 +255,6 @@
                 </ul>
             </div>
 
-            <!-- MIÉRCOLES 18 -->
             <div class="day-card">
                 <h2 class="day-title">Miércoles <span class="day-date">18/11</span></h2>
                 <ul class="subject-list">
@@ -257,7 +263,6 @@
                 </ul>
             </div>
 
-            <!-- JUEVES 19 -->
             <div class="day-card">
                 <h2 class="day-title">Jueves <span class="day-date">19/11</span></h2>
                 <ul class="subject-list">
@@ -269,7 +274,6 @@
                 </ul>
             </div>
 
-            <!-- VIERNES 20 -->
             <div class="day-card">
                 <h2 class="day-title">Viernes <span class="day-date">20/11</span></h2>
                 <ul class="subject-list">
@@ -280,7 +284,6 @@
                 </ul>
             </div>
 
-            <!-- LUNES 23 -->
             <div class="day-card">
                 <h2 class="day-title">Lunes <span class="day-date">23/11</span></h2>
                 <ul class="subject-list">
@@ -291,7 +294,6 @@
                 </ul>
             </div>
 
-            <!-- MARTES 24 -->
             <div class="day-card">
                 <h2 class="day-title">Martes <span class="day-date">24/11</span></h2>
                 <ul class="subject-list">
@@ -300,7 +302,6 @@
                 </ul>
             </div>
 
-            <!-- MIÉRCOLES 25 -->
             <div class="day-card">
                 <h2 class="day-title">Miércoles <span class="day-date">25/11</span></h2>
                 <ul class="subject-list">
@@ -311,7 +312,6 @@
         </main>
     </div>
 
-    <!-- Botón de descarga (fuera del área de captura para que no salga en la foto) -->
     <div class="download-container">
         <button id="downloadBtn" class="download-btn">
             <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -326,38 +326,43 @@
         document.getElementById('downloadBtn').addEventListener('click', function() {
             const btn = this;
             const originalText = btn.innerHTML;
+            const element = document.getElementById('capture-area');
             
-            // Cambiamos el estado del botón
+            // 1. Mostramos que está cargando
             btn.innerHTML = 'Generando imagen...';
             btn.disabled = true;
 
-            // Seleccionamos el área que queremos capturar
-            const element = document.getElementById('capture-area');
+            // 2. Aplicamos la clase para quitar animaciones (así no sale en negro)
+            element.classList.add('exporting');
 
-            // Usamos html2canvas para tomar la foto
-            html2canvas(element, {
-                scale: 3, // Escala 3 para Alta Definición (HD)
-                backgroundColor: '#0a0a0c', // Forzamos el fondo oscuro para evitar transparencias
-                useCORS: true,
-                logging: false
-            }).then(canvas => {
-                // Convertimos el lienzo a imagen PNG
-                const image = canvas.toDataURL('image/png');
-                
-                // Creamos un enlace invisible para descargar
+            // 3. Usamos html-to-image que entiende los colores oscuros y grids
+            htmlToImage.toPng(element, {
+                quality: 1,
+                pixelRatio: 3, // Resolución HD
+                backgroundColor: '#0a0a0c',
+                style: {
+                    transform: 'scale(1)', // Evita problemas de zoom
+                    transformOrigin: 'top left'
+                }
+            })
+            .then(function (dataUrl) {
+                // 4. Descargamos la imagen
                 const link = document.createElement('a');
                 link.download = 'Examenes_5B_Noviembre_2026.png';
-                link.href = image;
+                link.href = dataUrl;
                 link.click();
 
-                // Restauramos el botón
+                // 5. Restauramos todo
                 btn.innerHTML = originalText;
                 btn.disabled = false;
-            }).catch(err => {
-                console.error("Error al generar la imagen: ", err);
-                alert("Hubo un error al descargar. Intenta de nuevo.");
+                element.classList.remove('exporting');
+            })
+            .catch(function (error) {
+                console.error('Error al generar:', error);
+                alert('Hubo un error al descargar. Intenta de nuevo.');
                 btn.innerHTML = originalText;
                 btn.disabled = false;
+                element.classList.remove('exporting');
             });
         });
     </script>
